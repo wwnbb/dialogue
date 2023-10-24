@@ -9,23 +9,23 @@ import (
 )
 
 type Dialogue struct {
-	Request       *http.Request
-	ResponseWiter http.ResponseWriter
-	Logs          []string
-	isProcessed   bool
+	Request        *http.Request
+	ResponseWriter http.ResponseWriter
+	Logs           []string
+	isProcessed    bool
 }
 
 func NewDialogue(r *http.Request, w http.ResponseWriter) *Dialogue {
 	return &Dialogue{
-		Request:       r,
-		ResponseWiter: w,
-		Logs:          make([]string, 0),
+		Request:        r,
+		ResponseWriter: w,
+		Logs:           make([]string, 0),
 	}
 }
 
 func NotFoundHandler() DialogueFunc {
 	return func(d *Dialogue) *Dialogue {
-		http.NotFound(d.ResponseWiter, d.Request)
+		http.NotFound(d.ResponseWriter, d.Request)
 		d.isProcessed = true // marking as processed since a response is given
 		d.Logs = append(d.Logs, "Sent 404 Not Found")
 		return d
