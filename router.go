@@ -2,6 +2,11 @@ package dialogue
 
 import (
 	"log"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/google/uuid"
 )
 
 type RouteMap map[string]DialogueFunc
@@ -36,9 +41,68 @@ func (d Dialogue) Finish() {
 
 func Switch(routes RouteMap) DialogueFunc {
 	return func(d *Dialogue) *Dialogue {
-		if handler, exists := routes[d.Request.URL.Path]; exists {
-			return handler(d)
+		for pattern, route := range routes {
+			valid := validateAndExtractParams(pattern, d.Request.URL.Path)
+			if valid {
+				return route(d)
+			}
 		}
 		return d
 	}
+}
+
+func validateAndExtractParams(pattern string, path string) bool {
+	partsPattern := strings.Split(pattern, "/")
+	partsPath := strings.Split(path, "/")
+
+	if len(partsPattern) > len(partsPath) {
+		return false
+	}
+
+	params := map[string]string{}
+
+	for i, part := range partsPattern {
+		if strings.HasPrefix(part, "<") && strings.HasSuffix(part, ">") {
+			paramInfo := strings.Trim(part, "<>")
+			paramParts := strings.Split(paramInfo, ":")
+			paramName, paramType := paramParts[0], paramParts[1]
+
+			switch paramType {
+			case "uuid4":
+				if _, err := uuid.Parse(partsPath[i]); err != nil {
+					return false
+				}
+			case "datetime":
+				if _, err := time.Parse(time.RFC3339, partsPath[i]); err != nil {
+					return false
+				}
+			case "int":
+				if _, err := strconv.Atoi(partsPath[i]); err != nil {
+					return false
+				}
+			case "float":
+				if _, err := strconv.ParseFloat(partsPath[i], 64); err != nil {
+					return false
+				}
+			case "bool":
+				if _, err := strconv.ParseBool(partsPath[i]); err != nil {
+					return false
+				}
+			case "string":
+				// No validation needed for string
+			case "hex":
+				if _, err := strconv.ParseUint(partsPath[i], 16, 64); err != nil {
+					return false
+				}
+			default:
+				return false
+			}
+
+			params[paramName] = partsPath[i]
+		} else if part != partsPath[i] {
+			return false
+		}
+	}
+
+	return true
 }
