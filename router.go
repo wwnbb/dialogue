@@ -42,7 +42,7 @@ func (d Dialogue) Finish() {
 func Switch(routes RouteMap) DialogueFunc {
 	return func(d *Dialogue) *Dialogue {
 		for pattern, route := range routes {
-			valid := validateAndExtractParams(pattern, d.Request.URL.Path)
+			valid := validateAndExtractParams(d, pattern)
 			if valid {
 				return route(d)
 			}
@@ -51,15 +51,16 @@ func Switch(routes RouteMap) DialogueFunc {
 	}
 }
 
-func validateAndExtractParams(pattern string, path string) bool {
+func validateAndExtractParams(d *Dialogue, pattern string) bool {
+	path := d.Request.URL.Path
 	partsPattern := strings.Split(pattern, "/")
 	partsPath := strings.Split(path, "/")
 
-	if len(partsPattern) > len(partsPath) {
+	if len(partsPattern) != len(partsPath) {
 		return false
 	}
 
-	params := map[string]string{}
+	params := map[string]Param{}
 
 	for i, part := range partsPattern {
 		if strings.HasPrefix(part, "<") && strings.HasSuffix(part, ">") {
@@ -67,42 +68,37 @@ func validateAndExtractParams(pattern string, path string) bool {
 			paramParts := strings.Split(paramInfo, ":")
 			paramName, paramType := paramParts[0], paramParts[1]
 
+			var value interface{}
+			var err error
+
 			switch paramType {
 			case "uuid4":
-				if _, err := uuid.Parse(partsPath[i]); err != nil {
-					return false
-				}
+				value, err = uuid.Parse(partsPath[i])
 			case "datetime":
-				if _, err := time.Parse(time.RFC3339, partsPath[i]); err != nil {
-					return false
-				}
+				value, err = time.Parse(time.RFC3339, partsPath[i])
 			case "int":
-				if _, err := strconv.Atoi(partsPath[i]); err != nil {
-					return false
-				}
+				value, err = strconv.Atoi(partsPath[i])
 			case "float":
-				if _, err := strconv.ParseFloat(partsPath[i], 64); err != nil {
-					return false
-				}
+				value, err = strconv.ParseFloat(partsPath[i], 64)
 			case "bool":
-				if _, err := strconv.ParseBool(partsPath[i]); err != nil {
-					return false
-				}
+				value, err = strconv.ParseBool(partsPath[i])
 			case "string":
-				// No validation needed for string
+				value, err = partsPath[i], nil // Strings are always valid
 			case "hex":
-				if _, err := strconv.ParseUint(partsPath[i], 16, 64); err != nil {
-					return false
-				}
+				value, err = strconv.ParseUint(partsPath[i], 16, 64)
 			default:
 				return false
 			}
+			if err != nil {
+				return false
+			}
 
-			params[paramName] = partsPath[i]
+			params[paramName] = Param{Type: paramType, Value: value}
 		} else if part != partsPath[i] {
 			return false
 		}
 	}
 
+	d.PathParams = params // Set the validated and extracted parameters
 	return true
 }

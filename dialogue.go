@@ -8,11 +8,18 @@ import (
 	"time"
 )
 
+type Param struct {
+	Type  string      // Type of the parameter
+	Value interface{} // Actual value of the parameter
+}
+
 type Dialogue struct {
 	Request        *http.Request
 	ResponseWriter http.ResponseWriter
 	Logs           []string
 	isProcessed    bool
+	PathParams     map[string]Param // field to store path parameters
+	QueryParams    map[string]Param // field to store query parameters
 }
 
 func NewDialogue(r *http.Request, w http.ResponseWriter) *Dialogue {
