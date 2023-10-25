@@ -1,4 +1,4 @@
-# Dialogue: A Go Web Framework Based on Functions
+# Dialogue: A Go Web Framework
 
 #### Dialogue is a sleek web framework for Go that revolves around the concept of utilizing straightforward functions to process web requests. By simplifying the routing and handler function definitions, Dialogue enables developers to concentrate on building the logic of their applications.
 
