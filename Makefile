@@ -24,6 +24,7 @@ help:
 	@echo "  $(GREEN)build$(RESET)          Build gophish application"
 	@echo "  $(GREEN)debug$(RESET)          Build debug version of gophish application"
 	@echo "  $(GREEN)test$(RESET)           Run tests"
+	@echo "  $(GREEN)tidy$(RESET)           Run go mod tidy"
 
 .PHONY: build
 build:
@@ -36,3 +37,7 @@ debug:
 .PHONY: test
 test:
 	@go test ./...
+
+.PHONY: tidy
+tidy:
+	@go mod tidy
