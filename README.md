@@ -84,4 +84,4 @@ We appreciate your contributions! Please see the CONTRIBUTING.md file for more i
 
 ## License
 
-Dialogue is distributed under the MIT License. See the LICENSE file for more details.
+Dialogue is distributed under the GNU License. See the LICENSE file for more details.
