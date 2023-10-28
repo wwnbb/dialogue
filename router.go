@@ -56,7 +56,7 @@ func validateAndExtractParams(d *Dialogue, pattern string) bool {
 	partsPattern := strings.Split(pattern, "/")
 	partsPath := strings.Split(path, "/")
 
-	if len(partsPattern) != len(partsPath) {
+	if len(partsPattern) > len(partsPath) {
 		return false
 	}
 
@@ -87,6 +87,7 @@ func validateAndExtractParams(d *Dialogue, pattern string) bool {
 			case "hex":
 				value, err = strconv.ParseUint(partsPath[i], 16, 64)
 			default:
+				log.Printf("Warning: Unknown type %v", paramType)
 				return false
 			}
 			if err != nil {

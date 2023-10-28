@@ -1,11 +1,10 @@
 package dialogue
 
 import (
+	"github.com/google/uuid"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	"github.com/google/uuid"
 )
 
 func TestChain(t *testing.T) {
@@ -69,6 +68,47 @@ func TestSwitch(t *testing.T) {
 		handler(d)
 
 		if rr.Code == http.StatusOK && !test.want {
+			t.Errorf("handler returned wrong status code for path %s: got %v want %v",
+				test.path, rr.Code, http.StatusNotFound)
+		} else if rr.Code == http.StatusNotFound && test.want {
+			t.Errorf("handler returned wrong status code for path %s: got %v want %v",
+				test.path, rr.Code, http.StatusOK)
+		}
+	}
+}
+
+func TestComplexPathsSwitch(t *testing.T) {
+	routes := RouteMap{
+		"/123/<info_id:int>/foo/": func(d *Dialogue) *Dialogue {
+			return WriteResponseString(d, http.StatusOK, "Case 1")
+		},
+		"/123/<info_str:string>/bar/": func(d *Dialogue) *Dialogue {
+			return WriteResponseString(d, http.StatusOK, "Case 2")
+		},
+	}
+
+	handler := Chain(Switch(routes), NotFoundHandler())
+
+	tests := []struct {
+		path   string
+		want   bool
+		result string
+	}{
+		{path: "/123/321/foo/", want: true, result: "Case 1"},
+		{path: "/123/info/bar/", want: true, result: "Case 2"},
+	}
+
+	for _, test := range tests {
+		req, err := http.NewRequest("GET", test.path, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		rr := httptest.NewRecorder()
+		d := NewDialogue(req, rr)
+		handler(d)
+
+		if rr.Code == http.StatusOK && !test.want && rr.Body.String() != test.result {
 			t.Errorf("handler returned wrong status code for path %s: got %v want %v",
 				test.path, rr.Code, http.StatusNotFound)
 		} else if rr.Code == http.StatusNotFound && test.want {
